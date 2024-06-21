@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>qrcode_speakeasy</title>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"
+    ></script>
+  </head>
+  <body>
+    <div>
+      <button id="generate-qrcode">Generate QRCODE</button>
+      <div style="margin-bottom: 4px"></div>
+      <div id="qrcode"></div>
+    </div>
+    <div>
+      <button id="verify-totp">Verify TOTP</button>
+      <div style="margin-bottom: 4px"></div>
+      <input
+        id="totp-code"
+        type="number"
+        placeholder="Enter TOTP Code"
+        size="6"
+      />
+      <input
+        id="for-test-totp-window"
+        type="number"
+        placeholder="[TEST] Enter Window"
+      />
+    </div>
+    <script type="text/javascript">
+      const userId = 1;
+
+      const generateQrcode = () => {
+        fetch("http://localhost:3000/generate", {
+          method: "POST",
+          body: JSON.stringify({ userId }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => {
+            return response.json();
+          })
+          .then(({ qrCodeData }) => {
+            const qrCodeImage = new QRCodeStyling({
+              width: 300,
+              height: 300,
+              type: "svg",
+              data: qrCodeData,
+              image:
+                "https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg",
+              dotsOptions: {
+                color: "#4267b2",
+                type: "rounded",
+              },
+              backgroundOptions: {
+                color: "#e9ebee",
+              },
+              imageOptions: {
+                crossOrigin: "anonymous",
+                margin: 20,
+              },
+            });
+
+            qrCodeImage.append(document.getElementById("qrcode"));
+          });
+      };
+
+      const verifyTotp = () => {
+        const totpCode = document.getElementById("totp-code").value || null;
+
+        const maybeWindow =
+          +document.getElementById("for-test-totp-window").value ?? null;
+
+        fetch("http://localhost:3000/verify", {
+          method: "POST",
+          body: JSON.stringify({ userId, totpCode, window: maybeWindow }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.status === 401) {
+                throw new Error("Not Verified");
+            }
+            alert("Verified");
+          })
+          .catch(() => {
+            alert("Not Verified");
+          });
+      };
+
+      document.getElementById("generate-qrcode").onclick = generateQrcode;
+      document.getElementById("verify-totp").onclick = verifyTotp;
+    </script>
+  </body>
+</html>
